@@ -1,7 +1,4 @@
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 
 """
@@ -80,7 +77,10 @@ WSGI_APPLICATION = 'PROJ.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 pw = os.getenv("SUPABASE_PASSWORD")
 host = os.getenv("SUPABASE_HOST")
 user =  os.getenv("SUPABASE_USERNAME")
