@@ -29,13 +29,16 @@ _(Make sure you have done step-1 properly . That means till know you have a prop
  
  -**Then Go the /yourReferenceNo/settings/database Url, it will be look like this**
 
-![image](https://github.com/PARTHIB-DEB/testsupa/assets/103876861/80f58a0a-1dda-4a70-97db-0afd36e9ab83)
+![image](https://github.com/PARTHIB-DEB/testsupa/assets/103876861/9b9aa7d9-d458-404d-b630-12d26befcdfb)
+
 
  -**Copy Everything from connnection-parameters and paste it inside the SETTINGS.PY of django-project**
 
  Here remind one thing , Django natively **supports Multi-Model Databases** 😄. Means , You are hosting some of your models in Database A and some on Database B where each model eventually will be converted into a SQL relational table. But for that , you have to mention the dict-name of the proper database inside the models. Look at the settings file - 
 
 ```bash
+ # Settings.py
+
   import os
 from dotenv import load_dotenv # For keeping all of your personal supabase information private
 
@@ -64,7 +67,64 @@ DATABASES = {
     }
 }
 DATABASE_ROUTERS = ['PROJ.routers.CustomRouter']
+
+--------------------------------------------------------------------------------------------------------------
+
+# APP/models.py
+
+from django.db import models
+
+# Create your models here.
+
+class Local(models.Model):                  # the class where your local data is saved
+    _DATABASE = 'default'
+
+    name = models.CharField(max_length=50)
+    data = models.JSONField()
+    
+class Remote(models.Model):                 # the class for the remote data
+    _DATABASE = 'remote'
+    
+    name = models.CharField(max_length=20)
+    data = models.JSONField()
+
+---------------------------------------------------------------------------------------------------------------
+
+# PROJECT/routers.py
+
+class CustomRouter(object):
+
+    def db_for_read(self, model, **hints):
+        return getattr(model, "_DATABASE", "default")
+
+    def db_for_write(self, model, **hints):
+        return getattr(model, "_DATABASE", "default")
+
+    def allow_relation(self, obj1, obj2, **hints):
+        """
+        Relations between objects are allowed if both objects are
+        in the master/slave pool.
+        """
+        db_list = ('default', 'remote')
+        return obj1._state.db in db_list and obj2._state.db in db_list
+
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        """
+        All non-auth models end up in this pool.
+        """
+        return True
 ```
+ -**In the code , You can see there is one variable DATABASE_ROUTERS , which is basically points to the routing function of CustomRouter - Used to Route between two models where one model is in Local Postgres and other one is in Remote Supabase**
+
+ -**Now run the two commands**
+```bash
+ python manage.py migrate --database=remote
+
+
+ python manage.py migrate --database=default
+
+```
+Now Navigate to your **Supabase** Account to see the **remote** database and navigate to your **local postgres instance** via psql to check the **local** instance. 
 
  
 
